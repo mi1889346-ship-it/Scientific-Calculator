@@ -1,0 +1,796 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scientific Calculator</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --bg: #061326;
+    --panel: #0b203c;
+    --key: #16395e;
+    --cyan: #00e5ff;
+    --blue: #148bff;
+    --purple: #a000ff;
+    --pink: #ff2878;
+    --text: #f4f8ff;
+    --muted: #88a8c9;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    overflow-x: hidden;
+    font-family: Arial, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(ellipse at 15% 15%, #123e76 0, transparent 45%),
+        radial-gradient(ellipse at 90% 85%, #382064 0, transparent 40%),
+        var(--bg);
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border: none;
+    touch-action: manipulation;
+}
+
+.app {
+    width: 100%;
+    max-width: 430px;
+    position: relative;
+}
+
+.calculator {
+    position: relative;
+    z-index: 2;
+    padding: 17px;
+    border: 1px solid #167ec5;
+    border-radius: 28px;
+    background: linear-gradient(145deg, #0b2443, #061326 75%);
+    box-shadow: 0 0 30px #008cff20, 0 25px 65px #0008;
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 13px;
+    background: #143455;
+    border: 1px solid #245b89;
+    font-size: 21px;
+}
+
+.icon-btn:active {
+    background: #087dba;
+}
+
+.brand {
+    text-align: center;
+    font-weight: bold;
+    font-size: 19px;
+}
+
+.brand span {
+    color: var(--cyan);
+}
+
+.display {
+    min-height: 145px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: linear-gradient(135deg, #0a1c35, #020a17);
+    border: 1px solid #087bc4;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    box-shadow: inset 0 0 20px #008cff0b;
+    overflow: hidden;
+}
+
+.history {
+    color: var(--muted);
+    font-size: 15px;
+    min-height: 24px;
+    text-align: right;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.screen {
+    width: 100%;
+    text-align: right;
+    font-size: clamp(30px, 9vw, 48px);
+    color: white;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-height: 56px;
+}
+
+.screen::-webkit-scrollbar {
+    display: none;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.mode {
+    display: flex;
+    padding: 4px;
+    border: 1px solid #1375b9;
+    border-radius: 30px;
+    background: #07172b;
+}
+
+.mode button {
+    padding: 10px 16px;
+    border-radius: 25px;
+    color: var(--muted);
+    background: transparent;
+    font-weight: bold;
+}
+
+.mode button.active {
+    color: #001a2b;
+    background: linear-gradient(135deg, #00f0ff, #00a7ff);
+    box-shadow: 0 0 14px #00d9ff66;
+}
+
+.swipe-hint {
+    color: var(--cyan);
+    font-size: 12px;
+    text-align: right;
+    line-height: 1.5;
+}
+
+.keys {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.key {
+    min-width: 0;
+    min-height: 60px;
+    border-radius: 19px;
+    font-size: 21px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #214b76, #102d50);
+    border: 1px solid #247ec4;
+    box-shadow: inset 0 1px #ffffff0d, 0 4px 9px #0002;
+    transition: transform .12s, filter .12s;
+}
+
+.key:active {
+    transform: scale(.94);
+    filter: brightness(1.4);
+}
+
+.key.operator {
+    background: linear-gradient(145deg, #6511a5, #350c70);
+    border-color: #b72cff;
+}
+
+.key.danger {
+    background: linear-gradient(145deg, #ff3268, #a90e42);
+    border-color: #ff5684;
+}
+
+.key.function {
+    background: linear-gradient(145deg, #17659a, #10406d);
+    border-color: #168fcd;
+}
+
+.key.equal {
+    background: linear-gradient(145deg, #d016ff, #6a00c7);
+    border-color: #ed5aff;
+    box-shadow: 0 0 16px #b000ff33;
+}
+
+.footer {
+    text-align: center;
+    color: #7093b6;
+    font-size: 11px;
+    margin-top: 15px;
+}
+
+/* Scientific sidebar */
+
+.scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    background: #0009;
+    opacity: 0;
+    visibility: hidden;
+    transition: .25s;
+}
+
+.scrim.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.sidebar {
+    position: fixed;
+    z-index: 9;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(340px, 88vw);
+    padding: 20px 15px;
+    background: linear-gradient(160deg, #0c294a, #061326 85%);
+    border-right: 1px solid #00cfff;
+    box-shadow: 10px 0 45px #0008;
+    transform: translateX(-105%);
+    transition: transform .28s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+.side-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.side-title {
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.side-title span {
+    color: var(--cyan);
+}
+
+.close-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: #153859;
+    font-size: 22px;
+}
+
+.side-note {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.science-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+    overflow-y: auto;
+    padding-bottom: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: #1479b9 transparent;
+}
+
+.science-key {
+    min-height: 72px;
+    padding: 7px 3px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #143c64, #091e39);
+    border: 1px solid #116eab;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.science-key strong {
+    font-size: 17px;
+    color: white;
+}
+
+.science-key small {
+    font-size: 12px;
+    color: #72d9ff;
+}
+
+.science-key:active {
+    background: #086b9c;
+}
+
+.side-footer {
+    padding-top: 13px;
+    border-top: 1px solid #173a5b;
+    color: #8bb9dc;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Desktop: sidebar sits beside calculator */
+
+@media (min-width: 850px) {
+    .app {
+        max-width: 430px;
+        margin-left: 170px;
+    }
+
+    .sidebar {
+        width: 310px;
+        left: calc(50% - 430px);
+        top: 50%;
+        bottom: auto;
+        height: min(650px, 90vh);
+        border: 1px solid #00cfff;
+        border-radius: 22px;
+        transform: translate(-110%, -50%);
+    }
+
+    .sidebar.open {
+        transform: translate(0, -50%);
+    }
+}
+
+@media (max-width: 360px) {
+    body {
+        padding: 8px;
+    }
+
+    .calculator {
+        padding: 12px;
+        border-radius: 22px;
+    }
+
+    .keys {
+        gap: 6px;
+    }
+
+    .key {
+        min-height: 52px;
+        border-radius: 15px;
+        font-size: 18px;
+    }
+
+    .brand {
+        font-size: 16px;
+    }
+
+    .swipe-hint {
+        font-size: 10px;
+    }
+
+    .mode button {
+        padding: 9px 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        transition-duration: .01ms !important;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="scrim" id="scrim" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Scientific functions">
+    <div class="side-head">
+        <div class="side-title">Scientific <span>Functions</span></div>
+        <button class="close-btn" onclick="closeSidebar()" aria-label="Close sidebar">×</button>
+    </div>
+
+    <div class="side-note">Scientific Function below </div>
+
+    <div class="science-grid">
+        <button class="science-key" onclick="addFunction('sin(')">
+            <strong>sin</strong><small>sin(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('cos(')">
+            <strong>cos</strong><small>cos(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('tan(')">
+            <strong>tan</strong><small>tan(</small>
+        </button>
+
+        <button class="science-key" onclick="addFunction('asin(')">
+            <strong>sin⁻¹</strong><small>asin(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('acos(')">
+            <strong>cos⁻¹</strong><small>acos(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('atan(')">
+            <strong>tan⁻¹</strong><small>atan(</small>
+        </button>
+
+        <button class="science-key" onclick="addFunction('log(')">
+            <strong>log</strong><small>log(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('ln(')">
+            <strong>ln</strong><small>ln(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('sqrt(')">
+            <strong>√</strong><small>sqrt(</small>
+        </button>
+
+        <button class="science-key" onclick="addFunction('cbrt(')">
+            <strong>∛</strong><small>cbrt(</small>
+        </button>
+        <button class="science-key" onclick="addValue('^')">
+            <strong>xʸ</strong><small>power</small>
+        </button>
+        <button class="science-key" onclick="square()">
+            <strong>x²</strong><small>square</small>
+        </button>
+
+        <button class="science-key" onclick="addValue('!')">
+            <strong>x!</strong><small>factorial</small>
+        </button>
+        <button class="science-key" onclick="addValue('pi')">
+            <strong>π</strong><small>3.14159…</small>
+        </button>
+        <button class="science-key" onclick="addValue('e')">
+            <strong>e</strong><small>2.71828…</small>
+        </button>
+
+        <button class="science-key" onclick="addValue('%')">
+            <strong>%</strong><small>percent</small>
+        </button>
+        <button class="science-key" onclick="addFunction('abs(')">
+            <strong>|x|</strong><small>abs(</small>
+        </button>
+        <button class="science-key" onclick="addFunction('exp(')">
+            <strong>eˣ</strong><small>exp(</small>
+        </button>
+    </div>
+
+    <div class="side-footer">Solution is in Your Hands</div>
+</aside>
+
+<main class="app" id="app">
+    <section class="calculator">
+        <header class="header">
+            <button class="icon-btn" onclick="toggleSidebar()" aria-label="Open scientific functions">☰</button>
+            <div class="brand">Scientific <span>Calculator</span></div>
+            <button class="icon-btn" onclick="clearAll()" aria-label="Clear calculator">↻</button>
+        </header>
+
+        <div class="display">
+            <div class="history" id="history"></div>
+            <div class="screen" id="screen" aria-live="polite">0</div>
+        </div>
+
+        <div class="controls">
+            <div class="mode">
+                <button id="degBtn" class="active" onclick="setMode('DEG')">DEG</button>
+                <button id="radBtn" onclick="setMode('RAD')">RAD</button>
+            </div>
+           
+        </div>
+
+        <div class="keys">
+            <button class="key danger" onclick="clearAll()">AC</button>
+            <button class="key danger" onclick="deleteLast()">DEL</button>
+            <button class="key function" onclick="addValue('(')">(</button>
+            <button class="key function" onclick="addValue(')')">)</button>
+
+            <button class="key" onclick="addValue('7')">7</button>
+            <button class="key" onclick="addValue('8')">8</button>
+            <button class="key" onclick="addValue('9')">9</button>
+            <button class="key operator" onclick="addValue('/')">÷</button>
+
+            <button class="key" onclick="addValue('4')">4</button>
+            <button class="key" onclick="addValue('5')">5</button>
+            <button class="key" onclick="addValue('6')">6</button>
+            <button class="key operator" onclick="addValue('*')">×</button>
+
+            <button class="key" onclick="addValue('1')">1</button>
+            <button class="key" onclick="addValue('2')">2</button>
+            <button class="key" onclick="addValue('3')">3</button>
+            <button class="key operator" onclick="addValue('-')">−</button>
+
+            <button class="key" onclick="addValue('0')">0</button>
+            <button class="key" onclick="addValue('.')">.</button>
+            <button class="key equal" onclick="calculate()">=</button>
+            <button class="key operator" onclick="addValue('+')">+</button>
+        </div>
+
+        <div class="footer">Solve Your Problem Pray For us</div>
+    </section>
+</main>
+
+<script>
+"use strict";
+
+let expression = "";
+let mode = "DEG";
+let justCalculated = false;
+
+const screen = document.getElementById("screen");
+const history = document.getElementById("history");
+const sidebar = document.getElementById("sidebar");
+const scrim = document.getElementById("scrim");
+
+function updateScreen() {
+    screen.textContent = expression || "0";
+    screen.scrollLeft = screen.scrollWidth;
+}
+
+function addValue(value) {
+    if (justCalculated && /[0-9.]/.test(value)) {
+        expression = "";
+        history.textContent = "";
+    }
+    justCalculated = false;
+    expression += value;
+    updateScreen();
+}
+
+function addFunction(name) {
+    justCalculated = false;
+    expression += name;
+    updateScreen();
+    closeSidebar();
+}
+
+function clearAll() {
+    expression = "";
+    history.textContent = "";
+    justCalculated = false;
+    updateScreen();
+}
+
+function deleteLast() {
+    expression = expression.slice(0, -1);
+    justCalculated = false;
+    updateScreen();
+}
+
+function square() {
+    if (expression) {
+        expression = "(" + expression + ")^2";
+        justCalculated = false;
+        updateScreen();
+    }
+}
+
+function toggleSidebar() {
+    sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+}
+
+function openSidebar() {
+    sidebar.classList.add("open");
+    scrim.classList.add("visible");
+}
+
+function closeSidebar() {
+    sidebar.classList.remove("open");
+    scrim.classList.remove("visible");
+}
+
+function setMode(newMode) {
+    mode = newMode;
+    document.getElementById("degBtn").classList.toggle("active", mode === "DEG");
+    document.getElementById("radBtn").classList.toggle("active", mode === "RAD");
+}
+
+function toRadians(x) {
+    return x * Math.PI / 180;
+}
+
+function angle(x) {
+    return mode === "DEG" ? toRadians(x) : x;
+}
+
+function sin(x) { return Math.sin(angle(x)); }
+function cos(x) { return Math.cos(angle(x)); }
+function tan(x) {
+    const a = angle(x);
+    if (Math.abs(Math.cos(a)) < 1e-12) {
+        throw new Error("Undefined tangent");
+    }
+    return Math.tan(a);
+}
+
+function asin(x) {
+    const r = Math.asin(x);
+    return mode === "DEG" ? r * 180 / Math.PI : r;
+}
+function acos(x) {
+    const r = Math.acos(x);
+    return mode === "DEG" ? r * 180 / Math.PI : r;
+}
+function atan(x) {
+    const r = Math.atan(x);
+    return mode === "DEG" ? r * 180 / Math.PI : r;
+}
+
+function log(x) {
+    if (x <= 0) throw new Error("log domain");
+    return Math.log10(x);
+}
+function ln(x) {
+    if (x <= 0) throw new Error("ln domain");
+    return Math.log(x);
+}
+function sqrt(x) {
+    if (x < 0) throw new Error("sqrt domain");
+    return Math.sqrt(x);
+}
+function cbrt(x) { return Math.cbrt(x); }
+function abs(x) { return Math.abs(x); }
+function exp(x) { return Math.exp(x); }
+
+function factorial(n) {
+    if (n < 0 || !Number.isInteger(n) || n > 170) {
+        throw new Error("Factorial requires an integer from 0 to 170");
+    }
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+}
+
+/*
+ * Convert calculator notation to a restricted arithmetic expression.
+ * No arbitrary JavaScript statements or property access are permitted.
+ */
+function prepareExpression(input) {
+    let s = input.replace(/\s+/g, "");
+
+    // Support implicit multiplication: 2pi, 2(3+4), (2)(3), 2sin(30)
+    s = s.replace(/(\d|\)|pi|e)(?=(pi|e|sin|cos|tan|asin|acos|atan|log|ln|sqrt|cbrt|abs|exp|\())/g, "$1*");
+    s = s.replace(/(\))(?=\d)/g, "$1*");
+    s = s.replace(/(pi|e)(?=\d|\()/g, "$1*");
+
+    s = s.replace(/\bpi\b/g, "PI_CONST");
+    s = s.replace(/\be\b/g, "E_CONST");
+
+    // Replace postfix factorial for simple numeric or parenthesized terms.
+    for (let i = 0; i < 10; i++) {
+        const before = s;
+        s = s.replace(/(\d+(?:\.\d+)?|PI_CONST|E_CONST|\([^()]*\))!/g,
+            "factorial($1)");
+        if (s === before) break;
+    }
+
+    // Convert percentages such as 50% to 50/100.
+    s = s.replace(/(\d+(?:\.\d+)?)%/g, "($1/100)");
+
+    // Power operator.
+    s = s.replace(/\^/g, "**");
+
+    const allowed = /^(?:(?:\d+(?:\.\d*)?|\.\d+)|(?:PI_CONST|E_CONST)|(?:sin|cos|tan|asin|acos|atan|log|ln|sqrt|cbrt|abs|exp|factorial)|[()+\-*/,.]|(?:\*\*))*$/;
+
+    if (!s || !allowed.test(s)) {
+        throw new Error("Invalid expression");
+    }
+
+    return s;
+}
+
+function calculate() {
+    if (!expression) return;
+
+    const original = expression;
+
+    try {
+        const prepared = prepareExpression(original);
+
+        // Only whitelisted math functions are exposed.
+        const evaluator = Function(
+            "sin", "cos", "tan", "asin", "acos", "atan",
+            "log", "ln", "sqrt", "cbrt", "abs", "exp",
+            "factorial", "PI_CONST", "E_CONST",
+            '"use strict"; return (' + prepared + ');'
+        );
+
+        let result = evaluator(
+            sin, cos, tan, asin, acos, atan,
+            log, ln, sqrt, cbrt, abs, exp,
+            factorial, Math.PI, Math.E
+        );
+
+        if (typeof result !== "number" || !Number.isFinite(result)) {
+            throw new Error("Math error");
+        }
+
+        result = Number(result.toPrecision(12));
+
+        history.textContent = original + " =";
+        expression = String(result);
+        justCalculated = true;
+        updateScreen();
+    } catch (error) {
+        screen.textContent = "Error";
+        setTimeout(updateScreen, 1000);
+    }
+}
+
+/* Keyboard support */
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeSidebar();
+        return;
+    }
+
+    if (event.key === "Enter" || event.key === "=") {
+        event.preventDefault();
+        calculate();
+    } else if (event.key === "Backspace") {
+        deleteLast();
+    } else if (event.key === "Delete") {
+        clearAll();
+    } else if (/^[0-9.+\-*/()%^!]$/.test(event.key)) {
+        addValue(event.key);
+    } else if (event.key === "p" || event.key === "P") {
+        addValue("pi");
+    }
+});
+
+/* Finger / mouse swipe gestures */
+let startX = 0;
+let startY = 0;
+let tracking = false;
+
+document.addEventListener("touchstart", function(event) {
+    const touch = event.changedTouches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    tracking = true;
+}, { passive: true });
+
+document.addEventListener("touchend", function(event) {
+    if (!tracking) return;
+    tracking = false;
+
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    // Ignore vertical scrolling gestures.
+    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+
+    if (dx > 0 && startX < 65) {
+        openSidebar();
+    } else if (dx < 0 && sidebar.classList.contains("open")) {
+        closeSidebar();
+    }
+}, { passive: true });
+
+updateScreen();
+</script>
+
+</body>
+</html>
